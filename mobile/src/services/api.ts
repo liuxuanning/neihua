@@ -2,7 +2,10 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthResponse, User, Knowledge, ReviewStats, FocusStats, PaginatedResponse } from '../types';
 
-const API_BASE_URL = 'https://neihua.onrender.com/api';
+// 开发环境用 Render，生产环境用阿里云
+const API_BASE_URL = __DEV__ 
+  ? 'https://neihua.onrender.com/api' 
+  : 'http://59.110.5.24/api';
 
 class ApiService {
   private api: AxiosInstance;
