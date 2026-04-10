@@ -3,8 +3,8 @@ services:
   - type: web
     name: neihua-api
     runtime: docker
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
     plan: free
     healthCheckPath: /api
     envVars:
@@ -35,14 +35,13 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: AI_API_KEY
-        sync: false  # 手动填入 MiniMax API Key
+        sync: false
       - key: AI_BASE_URL
         value: https://api.minimax.chat/v1
       - key: AI_MODEL
         value: abab6.5s-chat
 
 databases:
-  # PostgreSQL 数据库
   - name: neihua-db
     databaseName: neihua
     plan: free
