@@ -50,8 +50,8 @@ export class FocusService {
     session.duration = Math.floor(
       (session.endTime.getTime() - session.startTime.getTime()) / 1000 / 60,
     );
-    session.notes = endDto.notes;
-    session.distractions = endDto.distractions;
+    if (endDto.notes) session.notes = endDto.notes;
+    if (endDto.distractions) session.distractions = endDto.distractions;
     session.isCompleted = endDto.isCompleted ?? true;
 
     await this.focusRepository.save(session);
