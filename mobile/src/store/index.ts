@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { User, Knowledge, FocusSession, ReviewStats, FocusStats } from '../types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { mockUser, mockKnowledgeList, mockReviewStats, mockFocusStats, mockTodayReviews } from '../services/mockData';
+import { apiService } from '../services/api';
 
 // ==================== 认证状态 ====================
 interface AuthState {
@@ -20,25 +20,37 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: true,
 
   login: async (email, password) => {
-    // Mock 登录
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    set({ user: mockUser, isAuthenticated: true });
+    const response = await apiService.login(email, password);
+    await AsyncStorage.setItem('accessToken', response.accessToken);
+    await AsyncStorage.setItem('refreshToken', response.refreshToken);
+    set({ user: response.user, isAuthenticated: true });
   },
 
   register: async (email, password, name) => {
-    // Mock 注册
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    set({ user: { ...mockUser, name, email }, isAuthenticated: true });
+    const response = await apiService.register(email, password, name);
+    await AsyncStorage.setItem('accessToken', response.accessToken);
+    await AsyncStorage.setItem('refreshToken', response.refreshToken);
+    set({ user: response.user, isAuthenticated: true });
   },
 
   logout: async () => {
+    await AsyncStorage.removeItem('accessToken');
+    await AsyncStorage.removeItem('refreshToken');
     set({ user: null, isAuthenticated: false });
   },
 
   checkAuth: async () => {
-    // Mock: 自动登录
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    set({ user: mockUser, isAuthenticated: true, isLoading: false });
+    try {
+      const token = await AsyncStorage.getItem('accessToken');
+      if (token) {
+        const user = await apiService.getProfile();
+        set({ user, isAuthenticated: true, isLoading: false });
+      } else {
+        set({ isLoading: false });
+      }
+    } catch (error) {
+      set({ user: null, isAuthenticated: false, isLoading: false });
+    }
   },
 }));
 
@@ -61,38 +73,39 @@ export const useKnowledgeStore = create<KnowledgeState>((set, get) => ({
 
   fetchKnowledgeList: async (params) => {
     set({ isLoading: true });
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    set({ knowledgeList: mockKnowledgeList, isLoading: false });
+    try {
+      const response = await apiService.getKnowledgeList(params);
+      set({ knowledgeList: response.items, isLoading: false });
+    } catch (error) {
+      set({ isLoading: false });
+    }
   },
 
   fetchTodayKnowledge: async () => {
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    set({ todayKnowledge: mockTodayReviews });
+    try {
+      const items = await apiService.getTodayKnowledge();
+      set({ todayKnowledge: items });
+    } catch (error) {
+      console.error('获取今日知识失败', error);
+    }
   },
 
   addKnowledge: async (data) => {
-    const newKnowledge: Knowledge = {
-      id: Date.now().toString(),
-      ...data,
-      understandingLevel: 1,
-      reviewCount: 0,
-      nextReviewDate: new Date(Date.now() + 86400000).toISOString(),
-      tags: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    set({ knowledgeList: [newKnowledge, ...get().knowledgeList] });
+    const knowledge = await apiService.createKnowledge(data);
+    set({ knowledgeList: [knowledge, ...get().knowledgeList] });
   },
 
   updateKnowledge: async (id, data) => {
+    const knowledge = await apiService.updateKnowledge(id, data);
     set({
       knowledgeList: get().knowledgeList.map((k) =>
-        k.id === id ? { ...k, ...data } : k
+        k.id === id ? knowledge : k
       ),
     });
   },
 
   deleteKnowledge: async (id) => {
+    await apiService.deleteKnowledge(id);
     set({
       knowledgeList: get().knowledgeList.filter((k) => k.id !== id),
     });
@@ -118,14 +131,10 @@ export const useFocusStore = create<FocusState>((set, get) => ({
   stats: null,
 
   startSession: async (plannedDuration, knowledgeId) => {
-    const session: FocusSession = {
-      id: Date.now().toString(),
+    const session = await apiService.startFocusSession({
       plannedDuration,
       knowledgeId,
-      startTime: new Date().toISOString(),
-      duration: 0,
-      isCompleted: false,
-    };
+    });
     set({
       currentSession: session,
       isRunning: true,
@@ -136,13 +145,17 @@ export const useFocusStore = create<FocusState>((set, get) => ({
   endSession: async (notes) => {
     const { currentSession } = get();
     if (currentSession) {
+      await apiService.endFocusSession(currentSession.id, {
+        notes,
+        isCompleted: true,
+      });
       set({ currentSession: null, isRunning: false, timeLeft: 25 * 60 });
     }
   },
 
   fetchStats: async () => {
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    set({ stats: mockFocusStats });
+    const stats = await apiService.getFocusStats();
+    set({ stats });
   },
 
   tick: () => {
@@ -170,17 +183,17 @@ export const useReviewStore = create<ReviewState>((set, get) => ({
   currentReviewIndex: 0,
 
   fetchTodayReviews: async () => {
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    set({ todayReviews: [...mockTodayReviews], currentReviewIndex: 0 });
+    const response = await apiService.getTodayReviews();
+    set({ todayReviews: response.items, currentReviewIndex: 0 });
   },
 
   fetchStats: async () => {
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    set({ stats: mockReviewStats });
+    const stats = await apiService.getReviewStats();
+    set({ stats });
   },
 
   submitReview: async (knowledgeId, score) => {
-    await new Promise((resolve) => setTimeout(resolve, 200));
+    await apiService.submitReview({ knowledgeId, score });
     const { todayReviews } = get();
     set({
       todayReviews: todayReviews.filter((k) => k.id !== knowledgeId),
