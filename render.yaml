@@ -1,0 +1,44 @@
+services:
+  # 后端 API 服务
+  - type: web
+    name: neihua-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /api
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DB_HOST
+        fromDatabase:
+          name: neihua-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: neihua-db
+          property: port
+      - key: DB_USERNAME
+        fromDatabase:
+          name: neihua-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: neihua-db
+          property: password
+      - key: DB_DATABASE
+        fromDatabase:
+          name: neihua-db
+          property: database
+      - key: JWT_SECRET
+        generateValue: true
+      - key: OPENAI_API_KEY
+        sync: false  # 手动填入 MiniMax API Key
+
+databases:
+  # PostgreSQL 数据库
+  - name: neihua-db
+    databaseName: neihua
+    plan: free
