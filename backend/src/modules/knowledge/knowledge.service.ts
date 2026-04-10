@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, MoreThanOrEqual, Between, MoreThan } from 'typeorm';
 import { Knowledge } from './knowledge.entity';
 import { Tag } from './tag.entity';
 import { CreateKnowledgeDto, UpdateKnowledgeDto, KnowledgeQueryDto, ImportFromUrlDto } from './dto/knowledge.dto';

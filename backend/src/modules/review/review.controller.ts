@@ -17,25 +17,25 @@ export class ReviewController {
   constructor(private readonly reviewService: ReviewService) {}
 
   @Get('today')
-  async getTodayReviews(@Request() req) {
+  async getTodayReviews(@Request() req: any) {
     return this.reviewService.getTodayReviews(req.user.id);
   }
 
   @Get('calendar')
   async getReviewCalendar(
     @Query('days') days: number,
-    @Request() req,
+    @Request() req: any,
   ) {
     return this.reviewService.getReviewCalendar(req.user.id, days || 30);
   }
 
   @Get('stats')
-  async getStats(@Request() req) {
+  async getStats(@Request() req: any) {
     return this.reviewService.getStats(req.user.id);
   }
 
   @Post('submit')
-  async submitReview(@Body() submitDto: SubmitReviewDto, @Request() req) {
+  async submitReview(@Body() submitDto: SubmitReviewDto, @Request() req: any) {
     return this.reviewService.submitReview(req.user.id, submitDto);
   }
 
@@ -43,7 +43,7 @@ export class ReviewController {
   async getHistory(
     @Query('page') page: number,
     @Query('limit') limit: number,
-    @Request() req,
+    @Request() req: any,
   ) {
     return this.reviewService.getHistory(req.user.id, page || 1, limit || 20);
   }

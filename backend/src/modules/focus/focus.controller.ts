@@ -19,7 +19,7 @@ export class FocusController {
   constructor(private readonly focusService: FocusService) {}
 
   @Post('start')
-  async startSession(@Body() startDto: StartFocusDto, @Request() req) {
+  async startSession(@Body() startDto: StartFocusDto, @Request() req: any) {
     return this.focusService.startSession(req.user.id, startDto);
   }
 
@@ -27,18 +27,18 @@ export class FocusController {
   async endSession(
     @Param('id') id: string,
     @Body() endDto: EndFocusDto,
-    @Request() req,
+    @Request() req: any,
   ) {
     return this.focusService.endSession(id, req.user.id, endDto);
   }
 
   @Get('current')
-  async getCurrentSession(@Request() req) {
+  async getCurrentSession(@Request() req: any) {
     return this.focusService.getCurrentSession(req.user.id);
   }
 
   @Get('stats')
-  async getStats(@Request() req) {
+  async getStats(@Request() req: any) {
     return this.focusService.getStats(req.user.id);
   }
 
@@ -46,13 +46,13 @@ export class FocusController {
   async getHistory(
     @Query('page') page: number,
     @Query('limit') limit: number,
-    @Request() req,
+    @Request() req: any,
   ) {
     return this.focusService.getHistory(req.user.id, page || 1, limit || 20);
   }
 
   @Get('streak')
-  async getStreak(@Request() req) {
+  async getStreak(@Request() req: any) {
     return this.focusService.getStreak(req.user.id);
   }
 }
