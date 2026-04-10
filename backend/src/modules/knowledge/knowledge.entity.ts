@@ -57,7 +57,7 @@ export class Knowledge {
   @Column({ type: 'date', nullable: true })
   lastReviewDate: Date;
 
-  @Column({ default: 2.5 })
+  @Column({ type: 'float', default: 2.5 })
   easeFactor: number;
 
   @Column({ default: 1 })
