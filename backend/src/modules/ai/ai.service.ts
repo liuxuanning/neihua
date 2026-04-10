@@ -1,6 +1,6 @@
 /**
  * AI 服务
- * 集成 OpenAI API 提供智能功能
+ * 支持 OpenAI / MiniMax API
  */
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -9,12 +9,18 @@ import OpenAI from 'openai';
 @Injectable()
 export class AiService implements OnModuleInit {
   private openai: OpenAI;
+  private model: string;
 
   constructor(private configService: ConfigService) {}
 
   onModuleInit() {
+    const apiKey = this.configService.get('AI_API_KEY') || this.configService.get('OPENAI_API_KEY');
+    const baseUrl = this.configService.get('AI_BASE_URL') || 'https://api.minimax.chat/v1';
+    this.model = this.configService.get('AI_MODEL') || 'abab6.5s-chat';
+
     this.openai = new OpenAI({
-      apiKey: this.configService.get('OPENAI_API_KEY'),
+      apiKey,
+      baseURL: baseUrl,
     });
   }
 
@@ -39,12 +45,12 @@ ${content}
 }`;
 
     const response = await this.openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: this.model,
       messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' },
     });
 
-    return JSON.parse(response.choices[0].message.content);
+    const text = response.choices[0].message.content || '{}';
+    return this.parseJson(text);
   }
 
   /**
@@ -64,16 +70,16 @@ ${content}
 - 问题应该帮助用户将知识与自身经验联系
 - 问题应该促进知识的内化
 
-直接返回 JSON 数组格式：["问题1", "问题2", "问题3"]`;
+直接返回 JSON 数组格式：{"questions": ["问题1", "问题2", "问题3"]}`;
 
     const response = await this.openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: this.model,
       messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' },
     });
 
-    const result = JSON.parse(response.choices[0].message.content);
-    return result.questions || result;
+    const text = response.choices[0].message.content || '{"questions": []}';
+    const result = this.parseJson(text);
+    return result.questions || [];
   }
 
   /**
@@ -109,11 +115,11 @@ ${content}
     ];
 
     const response = await this.openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: this.model,
       messages: messages as any,
     });
 
-    return response.choices[0].message.content;
+    return response.choices[0].message.content || '';
   }
 
   /**
@@ -149,12 +155,12 @@ ${content}
 - 突出核心概念和关系`;
 
     const response = await this.openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: this.model,
       messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' },
     });
 
-    return JSON.parse(response.choices[0].message.content);
+    const text = response.choices[0].message.content || '{}';
+    return this.parseJson(text);
   }
 
   /**
@@ -186,12 +192,12 @@ ${userExplanation}
 }`;
 
     const response = await this.openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: this.model,
       messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' },
     });
 
-    return JSON.parse(response.choices[0].message.content);
+    const text = response.choices[0].message.content || '{}';
+    return this.parseJson(text);
   }
 
   /**
@@ -210,21 +216,46 @@ ${userExplanation}
 ${content}
 
 请生成 3-5 张卡片，返回 JSON 数组：
-[
-  {
-    "question": "问题（应该触发主动回忆）",
-    "answer": "答案",
-    "difficulty": "easy/medium/hard"
-  }
-]`;
+{
+  "cards": [
+    {
+      "question": "问题（应该触发主动回忆）",
+      "answer": "答案",
+      "difficulty": "easy/medium/hard"
+    }
+  ]
+}`;
 
     const response = await this.openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: this.model,
       messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' },
     });
 
-    const result = JSON.parse(response.choices[0].message.content);
-    return result.cards || result;
+    const text = response.choices[0].message.content || '{"cards": []}';
+    const result = this.parseJson(text);
+    return result.cards || [];
+  }
+
+  /**
+   * 解析 JSON 响应
+   */
+  private parseJson(text: string): any {
+    try {
+      // 尝试直接解析
+      return JSON.parse(text);
+    } catch {
+      // 尝试提取 JSON 块
+      const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[1]);
+      }
+      // 尝试提取花括号内容
+      const braceMatch = text.match(/\{[\s\S]*\}/);
+      if (braceMatch) {
+        return JSON.parse(braceMatch[0]);
+      }
+      // 返回默认值
+      return {};
+    }
   }
 }

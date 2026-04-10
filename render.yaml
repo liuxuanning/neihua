@@ -34,8 +34,12 @@ services:
           property: database
       - key: JWT_SECRET
         generateValue: true
-      - key: OPENAI_API_KEY
+      - key: AI_API_KEY
         sync: false  # 手动填入 MiniMax API Key
+      - key: AI_BASE_URL
+        value: https://api.minimax.chat/v1
+      - key: AI_MODEL
+        value: abab6.5s-chat
 
 databases:
   # PostgreSQL 数据库
